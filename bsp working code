@@ -263,3 +263,27 @@ disp('SVM model trained successfully.');
 disp(svm_model);
 
 
+% Use only the first two features for visualization
+features_2D = combined_features(:, 1:2);  % Adjust indices based on chosen features
+svm_model_2D = fitcsvm(features_2D, labels);  % Train SVM model on these features
+
+% Create a grid to plot the decision boundary
+[x1Grid, x2Grid] = meshgrid(linspace(min(features_2D(:, 1)), max(features_2D(:, 1)), 100), ...
+                             linspace(min(features_2D(:, 2)), max(features_2D(:, 2)), 100));
+gridData = [x1Grid(:), x2Grid(:)];
+
+% Predict the response over the grid
+[~, scores] = predict(svm_model_2D, gridData);
+
+% Plot the decision boundary
+figure;
+gscatter(features_2D(:, 1), features_2D(:, 2), labels);
+hold on;
+contour(x1Grid, x2Grid, reshape(scores(:, 2), size(x1Grid)), [0 0], 'k');  % Decision boundary
+title('SVM Decision Boundary');
+xlabel('Feature 1');  % Adjust label as per feature
+ylabel('Feature 2');  % Adjust label as per feature
+legend('Normal', 'Abnormal', 'Decision Boundary');
+hold off;
+
+
