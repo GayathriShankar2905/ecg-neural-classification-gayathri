@@ -286,4 +286,30 @@ ylabel('Feature 2');  % Adjust label as per feature
 legend('Normal', 'Abnormal', 'Decision Boundary');
 hold off;
 
+% Extract features for each sample in the normal test data
+num_normal_test_samples = size(filtered_noisy_normal_test, 1);
+normal_test_features_matrix = zeros(num_normal_test_samples, 6);  % Assuming 6 features to extract
+
+for i = 1:num_normal_test_samples
+    normal_test_features_matrix(i, :) = struct2array(extract_features(filtered_noisy_normal_test(i, :)));
+end
+
+% Extract features for each sample in the abnormal test data
+num_abnormal_test_samples = size(filtered_noisy_abnormal_test, 1);
+abnormal_test_features_matrix = zeros(num_abnormal_test_samples, 6);  % Assuming 6 features to extract
+
+for i = 1:num_abnormal_test_samples
+    abnormal_test_features_matrix(i, :) = struct2array(extract_features(filtered_noisy_abnormal_test(i, :)));
+end
+
+% Combine test features into one matrix
+combined_test_features = [normal_test_features_matrix; abnormal_test_features_matrix];
+
+% Create labels for the test data
+normal_test_labels = zeros(num_normal_test_samples, 1);  % Label '0' for normal
+abnormal_test_labels = ones(num_abnormal_test_samples, 1); % Label '1' for abnormal
+
+% Combine test labels into one vector
+combined_test_labels = [normal_test_labels; abnormal_test_labels];
+
 
