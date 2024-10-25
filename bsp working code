@@ -312,4 +312,28 @@ abnormal_test_labels = ones(num_abnormal_test_samples, 1); % Label '1' for abnor
 % Combine test labels into one vector
 combined_test_labels = [normal_test_labels; abnormal_test_labels];
 
+% Make predictions on the test data
+predicted_labels = predict(svm_model, combined_test_features);
+
+% Calculate the confusion matrix
+confusion_mat = confusionmat(combined_test_labels, predicted_labels);
+
+% Calculate accuracy
+accuracy = sum(predicted_labels == combined_test_labels) / length(combined_test_labels);
+
+% Calculate precision and recall
+TP = confusion_mat(2, 2);  % True Positives
+TN = confusion_mat(1, 1);  % True Negatives
+FP = confusion_mat(1, 2);  % False Positives
+FN = confusion_mat(2, 1);  % False Negatives
+
+precision = TP / (TP + FP);
+recall = TP / (TP + FN);
+
+% Display metrics
+disp('Confusion Matrix:');
+disp(confusion_mat);
+disp(['Accuracy: ', num2str(accuracy)]);
+disp(['Precision: ', num2str(precision)]);
+disp(['Recall: ', num2str(recall)]);
 
