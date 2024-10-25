@@ -1,0 +1,253 @@
+% Load ECG Data
+function [data, header] = load_ecg_data(csv_file)
+    % Load CSV file, preserving original column headers
+    data = readtable(csv_file, 'VariableNamingRule', 'preserve');
+
+    % Check if the file has enough columns
+    if width(data) >= 2
+        % Extract header information for normal ECG data
+        sampling_frequency = data{1, 2};  % Adjust column index as needed
+        num_channels = width(data) - 1;   % Number of channels is total columns minus 1
+    elseif width(data) == 1
+        % Handle case for abnormal ECG data
+        sampling_frequency = NaN;          % Set to NaN or a default value
+        num_channels = 1;                  % One channel for abnormal data
+    else
+        error('The loaded data does not have enough columns for file: %s', csv_file);
+    end
+
+    % Remove header row from data
+    data = data(2:end, :);
+
+    % Convert the remaining data to a numeric array
+    data = table2array(data);  % Ensure the data is numeric
+
+    % Check if data is empty or not numeric
+    if isempty(data) || ~isnumeric(data)
+        error('Loaded data is empty or not numeric for file: %s', csv_file);
+    end
+
+    % Create header structure
+    header.sampling_frequency = sampling_frequency;
+    header.num_channels = num_channels;  % Include the number of channels in the header
+
+    % Display the loaded data for debugging
+    disp('Loaded data:');
+    disp(data);  % Display the loaded ECG data
+
+    % Check for valid sampling frequency
+    if header.sampling_frequency <= 0
+        warning('Invalid sampling frequency extracted from %s. Setting to default value of 250 Hz.', csv_file);
+        header.sampling_frequency = 250;  % Set to a default positive value
+    end
+end
+
+% Load normal ECG data
+[normal_ecg_data, normal_ecg_header] = load_ecg_data('ecg.csv');
+
+% Load abnormal ECG data
+[abnormal_ecg_data, abnormal_ecg_header] = load_ecg_data('sample.csv');
+
+% Check if normal data loaded correctly
+if normal_ecg_header.sampling_frequency <= 0
+    error('Invalid sampling frequency for normal ECG data: %f', normal_ecg_header.sampling_frequency);
+end
+
+% If you need to handle the single-column abnormal data, you might need to:
+if size(abnormal_ecg_data, 2) == 1
+    % If only one column, ensure to replicate or process as needed
+    % Here, we can assume that it represents a single channel of ECG data.
+    abnormal_ecg_data = abnormal_ecg_data;  % Use it as is, or you can modify as per your needs.
+end
+
+% Proceed with adding noise and filtering as before...
+
+% Function to add noise to ECG data
+function noisy_data = add_noise(ecg_data, noise_level)
+    % Add Gaussian noise to ECG data
+    % noise_level: standard deviation of the noise
+
+    % Check if ecg_data is numeric
+    if isempty(ecg_data) || ~isnumeric(ecg_data)
+        error('The ECG data is empty or not numeric.');
+    end
+
+    % Generate Gaussian noise
+    noise = noise_level * randn(size(ecg_data));
+
+    % Add noise to the original ECG data
+    noisy_data = ecg_data + noise;
+end
+
+% Specify noise level (adjust as needed)
+noise_level = 0.5;  % Change this value based on desired noise intensity
+
+% Add noise to normal ECG data
+noisy_normal_ecg = add_noise(normal_ecg_data, noise_level);  
+
+% Add noise to abnormal ECG data
+noisy_abnormal_ecg = add_noise(abnormal_ecg_data, noise_level);  
+
+% Display sizes of the noisy data for verification
+disp('Noisy Normal ECG Data Size:');
+disp(size(noisy_normal_ecg));
+
+disp('Noisy Abnormal ECG Data Size:');
+disp(size(noisy_abnormal_ecg));
+
+% Plotting the waveforms
+figure;
+
+% Original Normal ECG
+subplot(4, 1, 1);
+plot(normal_ecg_data);
+title('Original Normal ECG Waveform');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Original Abnormal ECG
+subplot(4, 1, 2);
+plot(abnormal_ecg_data);
+title('Original Abnormal ECG Waveform');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Noisy Normal ECG
+subplot(4, 1, 3);
+plot(noisy_normal_ecg);
+title('Noisy Normal ECG Waveform');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Noisy Abnormal ECG
+subplot(4, 1, 4);
+plot(noisy_abnormal_ecg);
+title('Noisy Abnormal ECG Waveform');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Adjust layout
+sgtitle('ECG Waveforms');  % Overall title for all subplots
+
+function filtered_data = butterworth_highpass(ecg_data, cutoff_freq, sampling_rate, order)
+    % Design a Butterworth high-pass filter
+    [b, a] = butter(order, cutoff_freq / (sampling_rate / 2), 'high');
+    
+    % Apply the filter to the ECG data
+    filtered_data = filtfilt(b, a, ecg_data);
+end
+
+% Example parameters for filtering
+cutoff_frequency = 0.5;  % Cutoff frequency in Hz (adjust as needed)
+sampling_rate = normal_ecg_header.sampling_frequency;  % Use the sampling frequency from the header
+filter_order = 4;  % Filter order (adjust as needed)
+
+% Apply the high-pass filter to the noisy normal ECG data
+filtered_noisy_normal_ecg = butterworth_highpass(noisy_normal_ecg, cutoff_frequency, sampling_rate, filter_order);
+
+% Apply the high-pass filter to the noisy abnormal ECG data
+filtered_noisy_abnormal_ecg = butterworth_highpass(noisy_abnormal_ecg, cutoff_frequency, sampling_rate, filter_order);
+
+% Check the size of the filtered data
+disp('Filtered Noisy Normal ECG Data Size:');
+disp(size(filtered_noisy_normal_ecg));
+
+disp('Filtered Noisy Abnormal ECG Data Size:');
+disp(size(filtered_noisy_abnormal_ecg));
+
+% Create a time vector for plotting
+% Assuming your original signals are sampled at the given sampling rate
+time_normal = (0:size(noisy_normal_ecg, 1)-1) / sampling_rate; 
+time_abnormal = (0:size(noisy_abnormal_ecg, 1)-1) / sampling_rate;
+
+% Plotting the results
+figure;
+
+% Subplot for Normal ECG
+subplot(2, 1, 1);
+plot(time_normal, noisy_normal_ecg);
+hold on;
+plot(time_normal, filtered_noisy_normal_ecg, 'r', 'LineWidth', 1.5);
+title('Noisy vs Filtered Normal ECG Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+legend('Noisy Normal ECG', 'Filtered Normal ECG');
+grid on;
+
+% Subplot for Abnormal ECG
+subplot(2, 1, 2);
+plot(time_abnormal, noisy_abnormal_ecg);
+hold on;
+plot(time_abnormal, filtered_noisy_abnormal_ecg, 'r', 'LineWidth', 1.5);
+title('Noisy vs Filtered Abnormal ECG Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+legend('Noisy Abnormal ECG', 'Filtered Abnormal ECG');
+grid on;
+
+% Adjust the layout
+sgtitle('Effect of Butterworth High-Pass Filter on ECG Signals');
+
+% Function to extract statistical features from ECG signals
+function features = extract_features(ecg_data)
+    % Ensure ecg_data is a numeric array and not empty
+    if isempty(ecg_data) || ~isnumeric(ecg_data)
+        error('Input data must be a non-empty numeric array.');
+    end
+
+    % Flatten the data if it has multiple channels (more than one column)
+    ecg_data = ecg_data(:);  % Convert to a column vector
+
+    % Initialize the features structure
+    features.mean = mean(ecg_data);
+    features.std = std(ecg_data);
+    features.max = max(ecg_data);
+    features.min = min(ecg_data);
+    features.rms = rms(ecg_data);
+    features.peak_to_peak = max(ecg_data) - min(ecg_data);
+end
+
+% Extract features from filtered normal ECG
+normal_features = extract_features(filtered_noisy_normal_ecg);
+
+% Extract features from filtered abnormal ECG
+abnormal_features = extract_features(filtered_noisy_abnormal_ecg);
+
+% Create a table to display the features
+feature_names = {'Mean', 'Standard Deviation', 'Max', 'Min', 'RMS', 'Peak-to-Peak'};
+normal_values = [normal_features.mean, normal_features.std, normal_features.max, ...
+                 normal_features.min, normal_features.rms, normal_features.peak_to_peak];
+abnormal_values = [abnormal_features.mean, abnormal_features.std, abnormal_features.max, ...
+                   abnormal_features.min, abnormal_features.rms, abnormal_features.peak_to_peak];
+
+% Check the lengths of the normal and abnormal values
+disp('Length of normal values:');
+disp(length(normal_values));
+disp('Length of abnormal values:');
+disp(length(abnormal_values));
+
+% Create a table with consistent lengths
+features_table = table(feature_names', normal_values', abnormal_values', ...
+                       'VariableNames', {'Feature', 'Normal_ECG', 'Abnormal_ECG'});
+
+% Display the features table
+disp('Statistical Features of ECG Signals:');
+disp(features_table);
+
+% Number of features to plot
+num_features = length(feature_names);
+
+% Create a bar graph for features comparison
+figure;
+bar([normal_values; abnormal_values]', 'grouped');
+title('Statistical Features of Normal and Abnormal ECG Signals');
+xlabel('Features');
+ylabel('Values');
+set(gca, 'XTickLabel', feature_names);
+legend('Normal ECG', 'Abnormal ECG');
+grid on;
+
+% Display the figure
+fig_handle = gcf;
+set(fig_handle, 'Position', [100, 100, 800, 400]);  % Adjust figure size
+
