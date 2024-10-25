@@ -259,5 +259,7 @@ combined_features = fillmissing(combined_features, 'movmean', 1);  % Using movin
 svm_model = fitcsvm(combined_features, labels);
 disp('SVM model trained successfully.');
 
+% Display SVM model details
+disp(svm_model);
 
 
