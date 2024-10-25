@@ -1,3 +1,11 @@
+![image](https://github.com/user-attachments/assets/db0b089f-8227-4896-b9e1-fbd19b75bc20)
+Minimum value before adjustment: -6.7295
+Negative values found in Normal ECG data. Adjusted to remove negatives.
+Minimum time value is: 0
+Maximum time value is: 19.988
+
+![image](https://github.com/user-attachments/assets/759b071b-9ed6-4337-a819-603097660c28)
+
 Split Abnormal ECG Data into Training and Testing Sets:
 Training Data Size: 
        17514         188
