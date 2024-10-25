@@ -110,3 +110,14 @@ Confusion Matrix:
 Accuracy: 0.84455
 Precision: 0.84058
 Recall: 0.9984
+
+![image](https://github.com/user-attachments/assets/cf3c86c9-b541-457e-b8c7-77416d3c4cf6)
+
+
+![image](https://github.com/user-attachments/assets/6820274d-dafd-4fad-a085-857fadcf1e86)
+
+![image](https://github.com/user-attachments/assets/e58e068b-e8d9-40bc-a643-3414f548c5a3)
+
+
+
+
