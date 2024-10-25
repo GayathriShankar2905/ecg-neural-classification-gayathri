@@ -213,3 +213,34 @@ grid on;
 
 % Adjust figure size if needed
 set(gcf, 'Position', [100, 100, 800, 400]);  % Customize figure size if necessary
+
+% Extract features for each sample in normal training data
+num_normal_samples = size(filtered_noisy_normal_train, 1);
+normal_features_matrix = zeros(num_normal_samples, 6);  % Assuming 6 features to extract
+
+for i = 1:num_normal_samples
+    normal_features_matrix(i, :) = struct2array(extract_features(filtered_noisy_normal_train(i, :)));
+end
+
+% Extract features for each sample in abnormal training data
+num_abnormal_samples = size(filtered_noisy_abnormal_train, 1);
+abnormal_features_matrix = zeros(num_abnormal_samples, 6);  % Assuming 6 features to extract
+
+for i = 1:num_abnormal_samples
+    abnormal_features_matrix(i, :) = struct2array(extract_features(filtered_noisy_abnormal_train(i, :)));
+end
+
+% Combine features into one matrix
+combined_features = [normal_features_matrix; abnormal_features_matrix];
+
+% Create labels for the training data
+normal_labels = zeros(num_normal_samples, 1);  % Label '0' for normal
+abnormal_labels = ones(num_abnormal_samples, 1); % Label '1' for abnormal
+
+% Combine labels into one vector
+labels = [normal_labels; abnormal_labels];
+
+% Create a table for easier handling
+classification_data = table(combined_features, labels);
+disp('Combined Feature Data for Classification:');
+disp(head(classification_data));  % Display first few rows
