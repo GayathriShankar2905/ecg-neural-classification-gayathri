@@ -1,1 +1,165 @@
+% Load Normal ECG Data
+normal_ecg_data = readtable('ecg.csv', 'VariableNamingRule', 'preserve');
+disp('Contents of Normal ECG Data:');
+disp(head(normal_ecg_data));  % Display the first few rows
+
+% Extract the ECG signal assuming it's in the first column
+ecg_signal = normal_ecg_data{:, 1}; % Change this to the correct column if necessary
+
+% Check for negative values and adjust
+min_value = min(ecg_signal);
+if min_value < 0
+    disp(['Minimum value before adjustment: ', num2str(min_value)]);
+    ecg_signal = ecg_signal + abs(min_value);  % Shift the signal upwards
+    disp('Negative values found in Normal ECG data. Adjusted to remove negatives.');
+end
+
+% Define the sampling frequency
+sampling_frequency = 250; % Example: adjust according to your data
+dt = 1 / sampling_frequency; % Time increment
+n_samples = length(ecg_signal); % Number of samples
+time_vector = (0:n_samples-1) * dt; % Time vector
+
+% Display the minimum and maximum time values
+disp(['Minimum time value is: ', num2str(min(time_vector))]);
+disp(['Maximum time value is: ', num2str(max(time_vector))]);
+
+% Load Abnormal ECG Data
+abnormal_ecg_data = readtable('mitbih_test.csv', 'VariableNamingRule', 'preserve');
+disp('Contents of Abnormal ECG Data:');
+disp(head(abnormal_ecg_data));  % Display the first few rows
+
+% Extract the ECG signal for abnormal data
+abnormal_ecg_signal = abnormal_ecg_data{:, 1}; % Adjust this if necessary
+
+% Check for negative values in Abnormal ECG Data
+if any(abnormal_ecg_signal < 0)
+    warning('Abnormal ECG data contains negative values.');
+end
+
+% Define the split_data function to split the dataset into training and testing
+function [train_data, test_data] = split_data(data, train_ratio)
+    % Determine the number of rows to allocate for training
+    num_samples = size(data, 1);
+    num_train = round(num_samples * train_ratio);
+
+    % Randomly shuffle the data
+    shuffled_indices = randperm(num_samples);
+    train_indices = shuffled_indices(1:num_train);
+    test_indices = shuffled_indices(num_train+1:end);
+
+    % Split the data based on the shuffled indices
+    train_data = data(train_indices, :);
+    test_data = data(test_indices, :);
+end
+
+% Proceed with splitting the abnormal data into training and testing sets
+train_ratio = 0.8;  % 80% training, 20% testing
+[abnormal_train_data, abnormal_test_data] = split_data(abnormal_ecg_data, train_ratio);
+disp('Split Abnormal ECG Data into Training and Testing Sets:');
+disp('Training Data Size: '); disp(size(abnormal_train_data));
+disp('Testing Data Size: '); disp(size(abnormal_test_data));
+
+% You can also split the normal ECG data if needed
+[normal_train_data, normal_test_data] = split_data(normal_ecg_data, train_ratio);
+disp('Split Normal ECG Data into Training and Testing Sets:');
+disp('Training Data Size: '); disp(size(normal_train_data));
+disp('Testing Data Size: '); disp(size(normal_test_data));
+
+% Function to add Gaussian noise to the ECG data
+function noisy_data = add_noise(ecg_data, noise_level)
+    noise = noise_level * randn(size(ecg_data));  % Generate Gaussian noise
+    noisy_data = ecg_data + noise;                % Add noise to the original data
+end
+
+% Set noise level (adjust as needed)
+noise_level = 0.5;
+
+% Add noise to both normal and abnormal training and testing datasets
+noisy_normal_train = add_noise(normal_train_data{:, 1}, noise_level);
+noisy_normal_test = add_noise(normal_test_data{:, 1}, noise_level);
+noisy_abnormal_train = add_noise(abnormal_train_data{:, 1}, noise_level);
+noisy_abnormal_test = add_noise(abnormal_test_data{:, 1}, noise_level);
+
+% Display the first few samples of the noisy data for verification
+disp('Noisy Normal Training Data:');
+disp(noisy_normal_train(1:10));  % Display first 10 samples
+disp('Noisy Abnormal Training Data:');
+disp(noisy_abnormal_train(1:10));  % Display first 10 samples
+
+
+function filtered_data = butterworth_highpass(data, cutoff_frequency, sampling_rate, filter_order)
+    % Normalize the cutoff frequency
+    Wn = cutoff_frequency / (sampling_rate / 2);  % Normalize with Nyquist frequency
+    [b, a] = butter(filter_order, Wn, 'high');     % Design Butterworth filter
+    filtered_data = filtfilt(b, a, data);          % Apply filter
+end
+
+% Define filter parameters
+cutoff_frequency = 0.5;   % Cutoff frequency in Hz
+filter_order = 4;         % Filter order
+
+% Apply the high-pass filter to each noisy dataset
+filtered_noisy_normal_train = butterworth_highpass(noisy_normal_train, cutoff_frequency, sampling_frequency, filter_order);
+filtered_noisy_normal_test = butterworth_highpass(noisy_normal_test, cutoff_frequency, sampling_frequency, filter_order);
+filtered_noisy_abnormal_train = butterworth_highpass(noisy_abnormal_train, cutoff_frequency, sampling_frequency, filter_order);
+filtered_noisy_abnormal_test = butterworth_highpass(noisy_abnormal_test, cutoff_frequency, sampling_frequency, filter_order);
+
+% Display the first few samples of the filtered data for verification
+disp('Filtered Noisy Normal Training Data:');
+disp(filtered_noisy_normal_train(1:10));  % Display first 10 samples
+disp('Filtered Noisy Abnormal Training Data:');
+disp(filtered_noisy_abnormal_train(1:10));  % Display first 10 samples
+
+
+% Create a figure to plot the waveforms
+figure;
+
+% Plot Original Normal ECG Data
+subplot(3, 2, 1);
+plot(normal_train_data{:, 1});  % Adjust the column index if needed
+title('Original Normal ECG Data');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Plot Noisy Normal ECG Data
+subplot(3, 2, 2);
+plot(noisy_normal_train);  % Noisy normal training data
+title('Noisy Normal ECG Data');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Plot Filtered Noisy Normal ECG Data
+subplot(3, 2, 3);
+plot(filtered_noisy_normal_train);  % Filtered noisy normal training data
+title('Filtered Noisy Normal ECG Data');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Plot Original Abnormal ECG Data
+subplot(3, 2, 4);
+plot(abnormal_train_data{:, 1});  % Adjust the column index if needed
+title('Original Abnormal ECG Data');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Plot Noisy Abnormal ECG Data
+subplot(3, 2, 5);
+plot(noisy_abnormal_train);  % Noisy abnormal training data
+title('Noisy Abnormal ECG Data');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Plot Filtered Noisy Abnormal ECG Data
+subplot(3, 2, 6);
+plot(filtered_noisy_abnormal_train);  % Filtered noisy abnormal training data
+title('Filtered Noisy Abnormal ECG Data');
+xlabel('Sample Number');
+ylabel('Amplitude');
+
+% Add an overall title
+sgtitle('ECG Waveforms: Original, Noisy, and Filtered');
+
+% Adjust figure size if needed
+set(gcf, 'Position', [100, 100, 800, 600]);  % Customize figure size if necessary
 
