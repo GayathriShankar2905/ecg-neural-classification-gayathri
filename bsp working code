@@ -255,5 +255,9 @@ end
 % Replace NaN values with the mean of each column
 combined_features = fillmissing(combined_features, 'movmean', 1);  % Using moving mean to fill NaN values
 
+% Train the SVM model on the combined features and labels
+svm_model = fitcsvm(combined_features, labels);
+disp('SVM model trained successfully.');
+
 
 
