@@ -244,3 +244,16 @@ labels = [normal_labels; abnormal_labels];
 classification_data = table(combined_features, labels);
 disp('Combined Feature Data for Classification:');
 disp(head(classification_data));  % Display first few rows
+
+% Check for NaN values in the combined features
+if any(isnan(combined_features), 'all')
+    disp('NaN values found in combined features. Taking corrective action.');
+else
+    disp('No NaN values in combined features.');
+end
+
+% Replace NaN values with the mean of each column
+combined_features = fillmissing(combined_features, 'movmean', 1);  % Using moving mean to fill NaN values
+
+
+
