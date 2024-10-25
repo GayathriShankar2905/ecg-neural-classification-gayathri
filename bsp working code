@@ -163,3 +163,40 @@ sgtitle('ECG Waveforms: Original, Noisy, and Filtered');
 % Adjust figure size if needed
 set(gcf, 'Position', [100, 100, 800, 600]);  % Customize figure size if necessary
 
+% Function to extract statistical features
+function features = extract_features(ecg_signal)
+    % Calculate statistical features
+    features.mean = mean(ecg_signal);                  % Mean
+    features.std = std(ecg_signal);                    % Standard Deviation
+    features.max = max(ecg_signal);                    % Maximum
+    features.min = min(ecg_signal);                    % Minimum
+    features.range = features.max - features.min;     % Range
+    features.rms = sqrt(mean(ecg_signal.^2));          % Root Mean Square
+    features.kurtosis = kurtosis(ecg_signal);          % Kurtosis
+    features.skewness = skewness(ecg_signal);          % Skewness
+    features.energy = sum(ecg_signal.^2);              % Energy
+    features.variance = var(ecg_signal);                % Variance
+
+    % Display the extracted features
+    disp('Extracted Features:');
+    disp(features);
+end
+
+% Extract features from filtered normal and abnormal ECG data
+normal_features_train = extract_features(filtered_noisy_normal_train);
+abnormal_features_train = extract_features(filtered_noisy_abnormal_train);
+
+% Create a table to hold the features for easier access
+features_table = table( ...
+    [normal_features_train.mean; abnormal_features_train.mean], ...
+    [normal_features_train.std; abnormal_features_train.std], ...
+    [normal_features_train.max; abnormal_features_train.max], ...
+    [normal_features_train.min; abnormal_features_train.min], ...
+    'VariableNames', {'Mean', 'Std', 'Max', 'Min'}, ...
+    'RowNames', {'Normal', 'Abnormal'});
+
+% Display the features table
+disp('Statistical Features Table:');
+disp(features_table);
+
+
